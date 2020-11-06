@@ -70,7 +70,7 @@ Node *Parser::parseProduct()
         if (op.type == TokenType::MultiplyOp || op.type == TokenType::DivideOp)
         {
             next();
-            Node *right = parseProduct();
+            Node *right = parseSum();
             return new Expression(sum, right, op.type);
         }
 
@@ -84,7 +84,8 @@ Node *Parser::parseProduct()
             Token crr = current();
             if (crr.type == TokenType::MultiplyOp || crr.type == TokenType::DivideOp)
             {
-                Node *operand2 = parseProduct();
+                next();
+                Node *operand2 = parseSum();
                 return new Expression{num, operand2, crr.type};
 
                 assert(false);
