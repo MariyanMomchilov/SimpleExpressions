@@ -48,9 +48,10 @@ private:
     std::vector<Token> tokens;
     unsigned tIndex;
     Token current() const;
+    bool isType(TokenType t) const;
     void next();
     void previous();
-    Node *parseNumber();
+    Node *parseOperand();
     Node *parseProduct();
     Node *parseSum();
 };

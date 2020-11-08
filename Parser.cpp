@@ -1,6 +1,6 @@
 #include "Parser.h"
 #include <cassert>
-#include "ASTChecker.h"
+#include "ASTVisitors.h"
 
 Expression::Expression(Node *l, Node *r, TokenType o) : left(l), right(r), op(o) {}
 
@@ -39,12 +39,17 @@ inline void Parser::previous()
     tIndex--;
 }
 
+inline bool Parser::isType(TokenType t) const
+{
+    return tokens[tIndex].type == t;
+}
+
 Node *Parser::buildAST()
 {
     return parseSum();
 }
 
-Node *Parser::parseNumber()
+Node *Parser::parseOperand()
 {
     Token crr = current();
     if (crr.type == TokenType::Number)
@@ -52,64 +57,47 @@ Node *Parser::parseNumber()
         next();
         return new Leaf{crr.value};
     }
+    else if (crr.type == TokenType::LeftPar)
+    {
+        next();
+        Node *expr = parseSum();
+        assert(current().type == TokenType::RightPar && expr != nullptr);
+        next();
+        return expr;
+    }
+    assert(false);
     return nullptr;
 }
 
 Node *Parser::parseProduct()
 {
+    Node *operand = parseOperand();
 
-    Token crr = current();
-    if (crr.type == TokenType::LeftPar)
+    Node *right;
+    TokenType type;
+    while (isType(TokenType::MultiplyOp) || isType(TokenType::DivideOp) || isType(TokenType::ModuloOp))
     {
+        type = current().type;
         next();
-        Node *sum = parseSum();
-        assert(current().type == TokenType::RightPar);
-        next();
-
-        Token op = current();
-        if (op.type == TokenType::MultiplyOp || op.type == TokenType::DivideOp)
-        {
-            next();
-            Node *right = parseSum();
-            return new Expression(sum, right, op.type);
-        }
-
-        return sum;
+        right = parseOperand();
+        assert(right != nullptr);
+        operand = new Expression(operand, right, type);
     }
-    else
-    {
-        Node *num = parseNumber();
-        if (num != nullptr)
-        {
-            Token crr = current();
-            if (crr.type == TokenType::MultiplyOp || crr.type == TokenType::DivideOp)
-            {
-                next();
-                Node *operand2 = parseSum();
-                return new Expression{num, operand2, crr.type};
-
-                assert(false);
-            }
-
-            return num;
-        }
-        return nullptr;
-    }
+    return operand;
 }
 
 Node *Parser::parseSum()
 {
-    Node *left = parseProduct();
-    if (left != nullptr)
+    Node *product = parseProduct();
+    Node *nextProduct;
+    TokenType type;
+    while (isType(TokenType::Plus) || isType(TokenType::Minus))
     {
-        Token op = current();
-        if (op.type == TokenType::Plus || op.type == TokenType::Minus)
-        {
-            next();
-            Node *right = parseSum();
-            return new Expression(left, right, op.type);
-        }
-
-        return left;
+        type = current().type;
+        next();
+        nextProduct = parseProduct();
+        assert(nextProduct != nullptr);
+        product = new Expression(product, nextProduct, type);
     }
+    return product;
 }

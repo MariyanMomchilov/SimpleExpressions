@@ -1,4 +1,4 @@
-#include "ASTChecker.h"
+#include "ASTVisitors.h"
 #include <iostream>
 
 char Printer::printOp(TokenType t)
